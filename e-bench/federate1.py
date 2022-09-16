@@ -486,7 +486,13 @@ def main():
     Ploss_max=1
     IF_max=0.1
     grantedtime = -1
+    
+    import pandas as pd
+    gis_df = pd.DataFrame(columns=['grantedTime', 'Va', 'Vb', 'Vc', 'Preal', 'Preac', 'subP', 'GIS'])
+    cnt=0
+    
     random.seed(0)
+    
     import chargerLoad as ch
     import Gridscore as gis
     for t in range(0, seconds, 300):
@@ -511,6 +517,16 @@ def main():
             Total_real_loss = Total_real_loss+LrValue
         Gridscore,Ploss_max,FeederP_max,IF_max = gis.gridscore(VraValue,ViaValue,VrbValue,VibValue,VrcValue,VicValue,Total_real_loss,rValue, FeederP_max, Ploss_max,IF_max)
         gis.GIS_store(grantedtime, Gridscore)
+        
+        gis_df.loc[cnt, 'grantedtime'] = grantedtime
+        gis_df.loc[cnt, 'Va'] = complex(VraValue, ViaValue)/1
+        gis_df.loc[cnt, 'Vb'] = complex(VrbValue, VibValue)/1
+        gis_df.loc[cnt, 'Vc'] = complex(VrcValue, VicValue)/1
+        gis_df.loc[cnt, 'Preal'] = Total_real_loss
+        gis_df.loc[cnt, 'subP'] = complex(rValue, iValue)/1000
+        gis_df.loc[cnt, 'GIS'] = Gridscore
+        cnt+=1
+        
         #UGrValue, UGiValue = h.helicsInputGetComplex(subid3)
         #TXLrValue, TXLiValue = h.helicsInputGetComplex(subid4)
         #OHRloss = h.helicsInputGetDouble(subid2)
@@ -523,6 +539,8 @@ def main():
         #logger.info("Loss value = {} W".format(double(OHRloss)/1))
         
     t = 60 * 60 * 24
+    gis_df.to_csv('gis_df.csv', index=False)
+
     while grantedtime < t:
         grantedtime = h.helicsFederateRequestTime(fed, t)
     logger.info("Destroying federate")
